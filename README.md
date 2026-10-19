@@ -66,7 +66,7 @@ Popover HUD:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/gemini_usage_menubar.git
+   git clone https://github.com/muradjabir/gemini_usage_menubar.git
    cd gemini_usage_menubar
    ```
 
