@@ -68,6 +68,12 @@ Popover HUD:
 
 ### Installation & Run
 
+#### Option A: Download Pre-built App (Recommended)
+1. Download the latest release: [**GeminiUsageBar-v1.0.0-macos-arm64.zip**](https://github.com/muradjabir/gemini_usage_menubar/releases/latest/download/GeminiUsageBar-v1.0.0-macos-arm64.zip)
+2. Unzip and drag `GeminiUsageBar.app` to your `/Applications` folder.
+3. Open the app to immediately see the status bar gauges.
+
+#### Option B: Build from Source
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/muradjabir/gemini_usage_menubar.git
