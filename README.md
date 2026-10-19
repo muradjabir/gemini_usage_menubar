@@ -1,6 +1,8 @@
 # 🪐 Gemini & Antigravity Usage Menu Bar
 
 <p align="center">
+  <img src="assets/app_icon.png" alt="Gemini Usage Bar App Icon" width="128" />
+  <br />
   <img src="https://img.shields.io/badge/Platform-macOS%2014.0%2B-black?style=for-the-badge&logo=apple" alt="Platform macOS" />
   <img src="https://img.shields.io/badge/Swift-5.9%2B-F05138?style=for-the-badge&logo=swift&logoColor=white" alt="Swift 5.9+" />
   <img src="https://img.shields.io/badge/SwiftUI-Native-0071e3?style=for-the-badge" alt="SwiftUI Native" />
