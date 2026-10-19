@@ -33,6 +33,10 @@ Built completely with **SwiftUI**, **AppKit**, and native vector drawing—rende
 
 ## 📸 Overview
 
+<p align="center">
+  <img src="assets/preview.png" alt="Gemini & Antigravity Usage Menu Bar Preview" width="460" />
+</p>
+
 ```
 Menu Bar:
   [ (🪐) (✦) ]   <-- Twin circular progress rings with centered vector logos
