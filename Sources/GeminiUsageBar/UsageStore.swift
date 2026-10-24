@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import ServiceManagement
 
 @MainActor
 public final class UsageStore: ObservableObject {
@@ -9,11 +10,13 @@ public final class UsageStore: ObservableObject {
     @Published public var geminiMetric: CircularGaugeMetric = .fiveHour
     @Published public var isRefreshing: Bool = false
     @Published public var lastUpdated: Date = Date()
+    @Published public var launchAtLogin: Bool = false
     
     private var secondTimer: AnyCancellable?
     private var pollTimer: AnyCancellable?
     
     public init() {
+        checkLaunchAtLoginStatus()
         refreshRealData()
         startLiveTimers()
     }
@@ -21,8 +24,33 @@ public final class UsageStore: ObservableObject {
     public func refresh() {
         isRefreshing = true
         refreshRealData()
+        checkLaunchAtLoginStatus()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             self.isRefreshing = false
+        }
+    }
+    
+    public func checkLaunchAtLoginStatus() {
+        if #available(macOS 13.0, *) {
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+        }
+    }
+    
+    public func toggleLaunchAtLogin() {
+        if #available(macOS 13.0, *) {
+            do {
+                if SMAppService.mainApp.status == .enabled {
+                    try SMAppService.mainApp.unregister()
+                    launchAtLogin = false
+                } else {
+                    try SMAppService.mainApp.register()
+                    launchAtLogin = true
+                }
+            } catch {
+                print("Failed to toggle launch at login:", error)
+                // Fallback check
+                launchAtLogin = SMAppService.mainApp.status == .enabled
+            }
         }
     }
     

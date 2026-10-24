@@ -28,6 +28,7 @@ Built completely with **SwiftUI**, **AppKit**, and native vector drawing—rende
   - Displays comparative daily bar charts inside the popover.
 - **Interactive Metric Toggle**:
   - Switch any gauge card between **5-Hour** and **Weekly** views with a single click.
+- **Built-in Launch at Login**: Toggle auto-start directly in the popup with zero terminal or config setup.
 - **Zero Dock Clutter**: Runs purely as an `LSUIElement` / accessory application in your menu bar.
 - **Zero Third-Party Dependencies**: Pure native Swift standard library and macOS frameworks (`AppKit`, `SwiftUI`, `Combine`).
 
@@ -41,7 +42,7 @@ Built completely with **SwiftUI**, **AppKit**, and native vector drawing—rende
 
 ```
 Menu Bar:
-  [ (🪐) (✦) ]   <-- Twin circular progress rings with centered vector logos
+  [ (🪐) (✦) ]   <-- Left-click opens HUD | Right-click opens menu (Refresh, About, Exit)
 
 Popover HUD:
 ┌────────────────────────────────────────────────────────┐
@@ -56,7 +57,7 @@ Popover HUD:
 │    ▂  ▅  █  ▆  ▃  ░  ░   (Resets Mon 00:00)            │
 │   M  T  W  T  F  S  S                                  │
 ├────────────────────────────────────────────────────────┤
-│  🔄 Refresh                                     ✕ Quit │
+│  ☑ Launch at Login    Right-click menu bar for options │
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -71,7 +72,7 @@ Popover HUD:
 ### Installation & Run
 
 #### Option A: Download Pre-built App (Recommended)
-1. Download the latest release: [**GeminiUsageBar-v1.0.1-macos-arm64.zip**](https://github.com/muradjabir/gemini_usage_menubar/releases/latest/download/GeminiUsageBar-v1.0.1-macos-arm64.zip)
+1. Download the latest release: [**GeminiUsageBar-v1.0.2-macos-arm64.zip**](https://github.com/muradjabir/gemini_usage_menubar/releases/latest/download/GeminiUsageBar-v1.0.2-macos-arm64.zip)
 2. Unzip and drag `GeminiUsageBar.app` to your `/Applications` folder.
 3. Because this is an open-source tool without an Apple Developer paid certificate ($99/yr), macOS Gatekeeper flags downloaded zip files. If macOS shows *"damaged and can’t be opened"*, simply remove the quarantine attribute:
    ```bash
@@ -94,42 +95,6 @@ Popover HUD:
 3. **Run in background:**
    ```bash
    ./.build/release/GeminiUsageBar &
-   ```
-
----
-
-## 🛠️ Launch at Login (Optional)
-
-To start the menu bar app automatically whenever you boot or log into macOS:
-
-1. Create the LaunchAgent:
-   ```bash
-   mkdir -p ~/Library/LaunchAgents
-   cat << 'EOF' > ~/Library/LaunchAgents/com.muradjabir.geminiusagebar.plist
-   <?xml version="1.0" encoding="UTF-8"?>
-   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-   <plist version="1.0">
-   <dict>
-       <key>Label</key>
-       <string>com.muradjabir.geminiusagebar</string>
-       <key>ProgramArguments</key>
-       <array>
-           <string>/Applications/GeminiUsageBar.app/Contents/MacOS/GeminiUsageBar</string>
-       </array>
-       <key>RunAtLoad</key>
-       <true/>
-       <key>KeepAlive</key>
-       <true/>
-       <key>ProcessType</key>
-       <string>Interactive</string>
-   </dict>
-   </plist>
-   EOF
-   ```
-
-2. Load the LaunchAgent:
-   ```bash
-   launchctl load ~/Library/LaunchAgents/com.muradjabir.geminiusagebar.plist
    ```
 
 ---

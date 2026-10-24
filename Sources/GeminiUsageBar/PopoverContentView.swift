@@ -2,11 +2,9 @@ import SwiftUI
 
 public struct PopoverContentView: View {
     @ObservedObject var store: UsageStore
-    var onQuit: () -> Void
     
-    public init(store: UsageStore, onQuit: @escaping () -> Void) {
+    public init(store: UsageStore) {
         self.store = store
-        self.onQuit = onQuit
     }
     
     public var body: some View {
@@ -40,7 +38,7 @@ public struct PopoverContentView: View {
             Divider()
                 .opacity(0.3)
             
-            // Footer
+            // Footer with clean Launch at Login toggle
             footerView
         }
         .padding(16)
@@ -118,28 +116,26 @@ public struct PopoverContentView: View {
     // MARK: - Footer
     private var footerView: some View {
         HStack {
+            // Native Launch at Login Toggle
             Button(action: {
-                store.refresh()
+                store.toggleLaunchAtLogin()
             }) {
                 HStack(spacing: 5) {
-                    Image(systemName: "arrow.clockwise")
-                        .rotationEffect(.degrees(store.isRefreshing ? 360 : 0))
-                        .animation(store.isRefreshing ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: store.isRefreshing)
-                    Text("Refresh")
+                    Image(systemName: store.launchAtLogin ? "checkmark.square.fill" : "square")
+                        .font(.system(size: 11))
+                        .foregroundColor(store.launchAtLogin ? .accentColor : .secondary)
+                    Text("Launch at Login")
                         .font(.caption)
+                        .foregroundColor(.secondary)
                 }
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
             
             Spacer()
             
-            Button("Quit") {
-                onQuit()
-            }
-            .buttonStyle(.plain)
-            .font(.caption)
-            .foregroundColor(.secondary)
+            Text("Right-click menu bar icon for options")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary.opacity(0.7))
         }
     }
 }
