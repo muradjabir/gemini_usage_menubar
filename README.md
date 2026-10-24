@@ -71,7 +71,7 @@ Popover HUD:
 ### Installation & Run
 
 #### Option A: Download Pre-built App (Recommended)
-1. Download the latest release: [**GeminiUsageBar-v1.0.0-macos-arm64.zip**](https://github.com/muradjabir/gemini_usage_menubar/releases/latest/download/GeminiUsageBar-v1.0.0-macos-arm64.zip)
+1. Download the latest release: [**GeminiUsageBar-v1.0.1-macos-arm64.zip**](https://github.com/muradjabir/gemini_usage_menubar/releases/latest/download/GeminiUsageBar-v1.0.1-macos-arm64.zip)
 2. Unzip and drag `GeminiUsageBar.app` to your `/Applications` folder.
 3. Because this is an open-source tool without an Apple Developer paid certificate ($99/yr), macOS Gatekeeper flags downloaded zip files. If macOS shows *"damaged and can’t be opened"*, simply remove the quarantine attribute:
    ```bash
