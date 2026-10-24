@@ -100,35 +100,36 @@ Popover HUD:
 
 ## 🛠️ Launch at Login (Optional)
 
-To start the menu bar app automatically when you log into macOS:
+To start the menu bar app automatically whenever you boot or log into macOS:
 
-1. Create a launch agent plist file:
+1. Create the LaunchAgent:
    ```bash
    mkdir -p ~/Library/LaunchAgents
-   cat << 'EOF' > ~/Library/LaunchAgents/com.user.geminiusagebar.plist
+   cat << 'EOF' > ~/Library/LaunchAgents/com.muradjabir.geminiusagebar.plist
    <?xml version="1.0" encoding="UTF-8"?>
    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
    <plist version="1.0">
    <dict>
        <key>Label</key>
-       <string>com.user.geminiusagebar</string>
+       <string>com.muradjabir.geminiusagebar</string>
        <key>ProgramArguments</key>
        <array>
-           <string>/ABSOLUTE/PATH/TO/gemini_usage_menubar/.build/release/GeminiUsageBar</string>
+           <string>/Applications/GeminiUsageBar.app/Contents/MacOS/GeminiUsageBar</string>
        </array>
        <key>RunAtLoad</key>
        <true/>
        <key>KeepAlive</key>
-       <false/>
+       <true/>
+       <key>ProcessType</key>
+       <string>Interactive</string>
    </dict>
    </plist>
    EOF
    ```
-   *(Replace `/ABSOLUTE/PATH/TO/` with the real path on your machine)*
 
-2. Load the agent:
+2. Load the LaunchAgent:
    ```bash
-   launchctl load ~/Library/LaunchAgents/com.user.geminiusagebar.plist
+   launchctl load ~/Library/LaunchAgents/com.muradjabir.geminiusagebar.plist
    ```
 
 ---
