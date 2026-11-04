@@ -3,12 +3,14 @@ import SwiftUI
 
 @main
 struct GeminiUsageBarApp {
+    private static var lockFileDescriptor: Int32 = -1
+    
     static func main() {
-        // Enforce single instance using bundle identifier check
-        let bundleID = Bundle.main.bundleIdentifier ?? "com.muradjabir.GeminiUsageBar"
-        let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
-        if runningApps.count > 1 {
-            // Already running another instance; terminate this duplicate immediately
+        // Enforce true OS-level single instance via BSD file lock
+        let lockPath = (NSTemporaryDirectory() as NSString).appendingPathComponent("com.muradjabir.GeminiUsageBar.lock")
+        lockFileDescriptor = open(lockPath, O_CREAT | O_RDWR, 0o666)
+        if lockFileDescriptor < 0 || flock(lockFileDescriptor, LOCK_EX | LOCK_NB) != 0 {
+            // Another instance already holds the lock; exit immediately
             exit(0)
         }
         
