@@ -7,6 +7,16 @@ public struct RealUsageResult {
 }
 
 public struct RealUsageProvider {
+    // Fixed standard baseline quotas (so bars are stable and accurately reflect remaining allowance)
+    public static let agy5hLimit: Double = 100.0     // Total prompts / interactions across all agents in 5h
+    public static let agyWeeklyLimit: Double = 500.0
+    
+    public static let argon5hLimit: Double = 50.0     // Argon reasoning tier limit in 5h
+    public static let argonWeeklyLimit: Double = 250.0
+    
+    public static let flash5hLimit: Double = 150.0    // Flash high-speed tier limit in 5h
+    public static let flashWeeklyLimit: Double = 750.0
+
     public static func fetchUsage() -> RealUsageResult {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let geminiDir = home.appendingPathComponent(".gemini")
@@ -41,10 +51,10 @@ public struct RealUsageProvider {
             for appDir in subdirs {
                 let brainDir = appDir.appendingPathComponent("brain")
                 guard fileManager.fileExists(atPath: brainDir.path) else { continue }
-                
                 guard let convDirs = try? fileManager.contentsOfDirectory(at: brainDir, includingPropertiesForKeys: nil) else { continue }
                 
                 for convDir in convDirs {
+                    // Only read transcript.jsonl (avoid counting transcript_full.jsonl duplicate)
                     let transcriptPath = convDir
                         .appendingPathComponent(".system_generated")
                         .appendingPathComponent("logs")
@@ -57,7 +67,6 @@ public struct RealUsageProvider {
                     let data = fileHandle.readDataToEndOfFile()
                     guard let text = String(data: data, encoding: .utf8) else { continue }
                     
-                    // Track model tier: "argon", "flash", or "other" (e.g. claude)
                     var currentTier: String = "flash"
                     
                     for line in text.split(separator: "\n") {
@@ -70,11 +79,12 @@ public struct RealUsageProvider {
                             } else if lower.contains("flash") {
                                 currentTier = "flash"
                             } else if lower.contains("pro") {
-                                currentTier = "argon" // 3.1 Pro -> mapped to reasoning/Argon tier
+                                currentTier = "argon"
                             }
                         }
                         
-                        if line.contains("\"type\":\"PLANNER_RESPONSE\"") || line.contains("\"type\":\"USER_INPUT\"") {
+                        // Count user prompts (USER_INPUT) - the true rate limit driver in Antigravity
+                        if line.contains("\"type\":\"USER_INPUT\"") {
                             guard let lineData = line.data(using: .utf8),
                                   let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
                                   let createdAtStr = json["created_at"] as? String else {
@@ -131,44 +141,43 @@ public struct RealUsageProvider {
         let flashNextReset = computeSlotReset(for: &flash5hDates)
         
         let dayNames = ["M", "T", "W", "T", "F", "S", "S"]
-        func makeDailyUsage(counts: [Int: Double]) -> [DailyUsage] {
-            let maxVal = max(100.0, (counts.values.max() ?? 100.0) * 1.1)
+        func makeDailyUsage(counts: [Int: Double], dailyCap: Double) -> [DailyUsage] {
             return (0..<7).map { i in
-                DailyUsage(dayName: dayNames[i], count: counts[i] ?? 0, maxCap: maxVal)
+                DailyUsage(dayName: dayNames[i], count: counts[i] ?? 0, maxCap: dailyCap)
             }
         }
         
         let agySnap = UsageSnapshot(
             source: .antigravity,
             fiveHourUsed: agy5hCount,
-            fiveHourLimit: max(1000.0, agy5hCount * 1.1),
+            fiveHourLimit: agy5hLimit,
             nextSlotResetSeconds: agyNextReset,
             fullResetSeconds: max(0, 5 * 3600 - agyNextReset),
             weeklyUsed: agyWkCount,
-            weeklyLimit: max(3000.0, agyWkCount * 1.1),
-            weeklyDays: makeDailyUsage(counts: agyWkDays)
+            weeklyLimit: agyWeeklyLimit,
+            weeklyDays: makeDailyUsage(counts: agyWkDays, dailyCap: max(20.0, (agyWkDays.values.max() ?? 20.0) * 1.2))
         )
         
         let argonSnap = UsageSnapshot(
             source: .geminiArgon,
             fiveHourUsed: argon5hCount,
-            fiveHourLimit: max(1000.0, argon5hCount * 1.1),
+            fiveHourLimit: argon5hLimit,
             nextSlotResetSeconds: argonNextReset,
             fullResetSeconds: max(0, 5 * 3600 - argonNextReset),
             weeklyUsed: argonWkCount,
-            weeklyLimit: max(3000.0, argonWkCount * 1.1),
-            weeklyDays: makeDailyUsage(counts: argonWkDays)
+            weeklyLimit: argonWeeklyLimit,
+            weeklyDays: makeDailyUsage(counts: argonWkDays, dailyCap: max(15.0, (argonWkDays.values.max() ?? 15.0) * 1.2))
         )
         
         let flashSnap = UsageSnapshot(
             source: .geminiFlash,
             fiveHourUsed: flash5hCount,
-            fiveHourLimit: max(1000.0, flash5hCount * 1.1),
+            fiveHourLimit: flash5hLimit,
             nextSlotResetSeconds: flashNextReset,
             fullResetSeconds: max(0, 5 * 3600 - flashNextReset),
             weeklyUsed: flashWkCount,
-            weeklyLimit: max(3000.0, flashWkCount * 1.1),
-            weeklyDays: makeDailyUsage(counts: flashWkDays)
+            weeklyLimit: flashWeeklyLimit,
+            weeklyDays: makeDailyUsage(counts: flashWkDays, dailyCap: max(25.0, (flashWkDays.values.max() ?? 25.0) * 1.2))
         )
         
         return RealUsageResult(
