@@ -48,7 +48,6 @@ public final class UsageStore: ObservableObject {
                 }
             } catch {
                 print("Failed to toggle launch at login:", error)
-                // Fallback check
                 launchAtLogin = SMAppService.mainApp.status == .enabled
             }
         }
@@ -56,9 +55,10 @@ public final class UsageStore: ObservableObject {
     
     public func refreshRealData() {
         Task.detached(priority: .background) {
-            let realAgy = RealUsageProvider.fetchAntigravityUsage()
+            let result = RealUsageProvider.fetchUsage()
             await MainActor.run {
-                self.antigravitySnapshot = realAgy
+                self.antigravitySnapshot = result.antigravity
+                self.geminiSnapshot = result.gemini
                 self.lastUpdated = Date()
             }
         }
