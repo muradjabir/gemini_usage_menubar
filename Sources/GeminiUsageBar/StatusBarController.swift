@@ -25,7 +25,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     }
     
     private func setupPopover() {
-        popover.contentSize = NSSize(width: 390, height: 380)
+        popover.contentSize = NSSize(width: 380, height: 420)
         popover.behavior = .transient
         popover.animates = true
         
@@ -70,9 +70,9 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     }
     
     private func bindStore() {
-        Publishers.CombineLatest(store.$antigravitySnapshot, store.$geminiSnapshot)
+        Publishers.CombineLatest3(store.$antigravitySnapshot, store.$geminiArgonSnapshot, store.$geminiFlashSnapshot)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _, _ in
+            .sink { [weak self] _, _, _ in
                 self?.updateStatusBarItem()
             }
             .store(in: &cancellables)
@@ -82,7 +82,8 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         guard let button = statusItem.button else { return }
         
         let agyPercent = store.antigravitySnapshot.fiveHourPercent
-        let gemPercent = store.geminiSnapshot.fiveHourPercent
+        // For menu bar icon, track the active higher-demand tier (Argon) or max
+        let gemPercent = max(store.geminiArgonSnapshot.fiveHourPercent, store.geminiFlashSnapshot.fiveHourPercent)
         
         let gaugeImage = MenuBarGaugeRenderer.renderGaugeIcon(
             agyPercent: agyPercent,
@@ -125,7 +126,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     @objc private func aboutClicked() {
         let alert = NSAlert()
         alert.messageText = "Gemini & Antigravity Usage Bar"
-        alert.informativeText = "Version 1.0.2\n\nA native macOS menu bar status monitor tracking 5-hour rolling request windows and weekly quotas for Antigravity IDE and Gemini.\n\nDeveloped by Murad Jabir."
+        alert.informativeText = "Version 1.0.3\n\nA native macOS menu bar status monitor tracking 5-hour rolling request windows and weekly quotas for Antigravity, Gemini Argon, and Gemini Flash.\n\nDeveloped by Murad Jabir."
         alert.alertStyle = .informational
         if let iconPath = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
            let icon = NSImage(contentsOfFile: iconPath) {

@@ -5,9 +5,18 @@ import ServiceManagement
 @MainActor
 public final class UsageStore: ObservableObject {
     @Published public var antigravitySnapshot: UsageSnapshot = .mockAntigravity
-    @Published public var geminiSnapshot: UsageSnapshot = .mockGeminiApi
-    @Published public var agyMetric: CircularGaugeMetric = .fiveHour
-    @Published public var geminiMetric: CircularGaugeMetric = .fiveHour
+    @Published public var geminiArgonSnapshot: UsageSnapshot = .mockGeminiArgon
+    @Published public var geminiFlashSnapshot: UsageSnapshot = .mockGeminiFlash
+    
+    // Fallback combined snapshot for menu bar icons or general usage
+    public var combinedGeminiSnapshot: UsageSnapshot {
+        geminiArgonSnapshot
+    }
+    
+    @Published public var agyMetric: UsageWindowMetric = .fiveHour
+    @Published public var argonMetric: UsageWindowMetric = .fiveHour
+    @Published public var flashMetric: UsageWindowMetric = .fiveHour
+    
     @Published public var isRefreshing: Bool = false
     @Published public var lastUpdated: Date = Date()
     @Published public var launchAtLogin: Bool = false
@@ -58,45 +67,39 @@ public final class UsageStore: ObservableObject {
             let result = RealUsageProvider.fetchUsage()
             await MainActor.run {
                 self.antigravitySnapshot = result.antigravity
-                self.geminiSnapshot = result.gemini
+                self.geminiArgonSnapshot = result.geminiArgon
+                self.geminiFlashSnapshot = result.geminiFlash
                 self.lastUpdated = Date()
             }
         }
     }
     
     private func startLiveTimers() {
-        // Ticking countdown timer every second
+        // Decrement reset seconds each second
         secondTimer = Timer.publish(every: 1.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                if self.antigravitySnapshot.nextSlotResetSeconds > 0 {
-                    self.antigravitySnapshot.nextSlotResetSeconds -= 1
+                
+                func decrementSnap(_ snap: inout UsageSnapshot) {
+                    if snap.nextSlotResetSeconds > 0 {
+                        snap.nextSlotResetSeconds = max(0, snap.nextSlotResetSeconds - 1)
+                    }
+                    if snap.fullResetSeconds > 0 {
+                        snap.fullResetSeconds = max(0, snap.fullResetSeconds - 1)
+                    }
                 }
-                if self.geminiSnapshot.nextSlotResetSeconds > 0 {
-                    self.geminiSnapshot.nextSlotResetSeconds -= 1
-                }
+                
+                decrementSnap(&self.antigravitySnapshot)
+                decrementSnap(&self.geminiArgonSnapshot)
+                decrementSnap(&self.geminiFlashSnapshot)
             }
         
-        // Auto-refresh real usage every 30 seconds
+        // Auto-refresh from transcript files every 30 seconds
         pollTimer = Timer.publish(every: 30.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 self?.refreshRealData()
             }
-    }
-    
-    public static func formatDuration(_ seconds: TimeInterval) -> String {
-        let secs = Int(max(0, seconds))
-        let hours = secs / 3600
-        let minutes = (secs % 3600) / 60
-        let s = secs % 60
-        if hours > 0 {
-            return "\(hours)h \(minutes)m"
-        } else if minutes > 0 {
-            return "\(minutes)m \(s)s"
-        } else {
-            return "\(s)s"
-        }
     }
 }

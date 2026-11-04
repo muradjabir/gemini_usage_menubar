@@ -2,14 +2,16 @@ import Foundation
 
 public enum UsageSource: String, CaseIterable, Identifiable {
     case antigravity = "Antigravity IDE"
-    case geminiApi = "Gemini API"
+    case geminiArgon = "Gemini Argon"
+    case geminiFlash = "Gemini Flash"
 
     public var id: String { rawValue }
     
     public var iconName: String {
         switch self {
         case .antigravity: return "sparkles"
-        case .geminiApi: return "bolt.fill"
+        case .geminiArgon: return "bolt.shield.fill"
+        case .geminiFlash: return "bolt.fill"
         }
     }
 }
@@ -48,16 +50,7 @@ public struct UsageSnapshot {
     }
     
     public static var mockAntigravity: UsageSnapshot {
-        let days = [
-            DailyUsage(dayName: "M", count: 45, maxCap: 100),
-            DailyUsage(dayName: "T", count: 78, maxCap: 100),
-            DailyUsage(dayName: "W", count: 92, maxCap: 100),
-            DailyUsage(dayName: "T", count: 64, maxCap: 100),
-            DailyUsage(dayName: "F", count: 35, maxCap: 100),
-            DailyUsage(dayName: "S", count: 12, maxCap: 100),
-            DailyUsage(dayName: "S", count: 5, maxCap: 100)
-        ]
-        return UsageSnapshot(
+        UsageSnapshot(
             source: .antigravity,
             fiveHourUsed: 68,
             fiveHourLimit: 100,
@@ -65,29 +58,33 @@ public struct UsageSnapshot {
             fullResetSeconds: 2 * 3600 + 15 * 60,
             weeklyUsed: 331,
             weeklyLimit: 500,
-            weeklyDays: days
+            weeklyDays: []
         )
     }
     
-    public static var mockGeminiApi: UsageSnapshot {
-        let days = [
-            DailyUsage(dayName: "M", count: 1.2, maxCap: 5.0),
-            DailyUsage(dayName: "T", count: 2.8, maxCap: 5.0),
-            DailyUsage(dayName: "W", count: 3.4, maxCap: 5.0),
-            DailyUsage(dayName: "T", count: 2.1, maxCap: 5.0),
-            DailyUsage(dayName: "F", count: 1.8, maxCap: 5.0),
-            DailyUsage(dayName: "S", count: 0.6, maxCap: 5.0),
-            DailyUsage(dayName: "S", count: 0.4, maxCap: 5.0)
-        ]
-        return UsageSnapshot(
-            source: .geminiApi,
-            fiveHourUsed: 220,
-            fiveHourLimit: 1000,
-            nextSlotResetSeconds: 15 * 60 + 40,
-            fullResetSeconds: 1 * 3600 + 45 * 60,
-            weeklyUsed: 12.3,
-            weeklyLimit: 25.0,
-            weeklyDays: days
+    public static var mockGeminiArgon: UsageSnapshot {
+        UsageSnapshot(
+            source: .geminiArgon,
+            fiveHourUsed: 45,
+            fiveHourLimit: 100,
+            nextSlotResetSeconds: 30 * 60,
+            fullResetSeconds: 2 * 3600,
+            weeklyUsed: 210,
+            weeklyLimit: 500,
+            weeklyDays: []
+        )
+    }
+    
+    public static var mockGeminiFlash: UsageSnapshot {
+        UsageSnapshot(
+            source: .geminiFlash,
+            fiveHourUsed: 30,
+            fiveHourLimit: 250,
+            nextSlotResetSeconds: 15 * 60,
+            fullResetSeconds: 1 * 3600,
+            weeklyUsed: 150,
+            weeklyLimit: 1000,
+            weeklyDays: []
         )
     }
 }

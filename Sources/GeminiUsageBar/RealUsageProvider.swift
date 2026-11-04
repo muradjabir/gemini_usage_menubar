@@ -2,7 +2,8 @@ import Foundation
 
 public struct RealUsageResult {
     public let antigravity: UsageSnapshot
-    public let gemini: UsageSnapshot
+    public let geminiArgon: UsageSnapshot
+    public let geminiFlash: UsageSnapshot
 }
 
 public struct RealUsageProvider {
@@ -14,15 +15,20 @@ public struct RealUsageProvider {
         let fiveHoursAgo = now.addingTimeInterval(-5 * 3600)
         let sevenDaysAgo = now.addingTimeInterval(-7 * 86400)
         
-        var agyFiveHourCount: Double = 0
-        var agyWeeklyCount: Double = 0
-        var agyTimestampsIn5h: [Date] = []
-        var agyWeekdayCounts: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
+        var agy5hCount: Double = 0
+        var agyWkCount: Double = 0
+        var agy5hDates: [Date] = []
+        var agyWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
-        var geminiFiveHourCount: Double = 0
-        var geminiWeeklyCount: Double = 0
-        var geminiTimestampsIn5h: [Date] = []
-        var geminiWeekdayCounts: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
+        var argon5hCount: Double = 0
+        var argonWkCount: Double = 0
+        var argon5hDates: [Date] = []
+        var argonWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
+        
+        var flash5hCount: Double = 0
+        var flashWkCount: Double = 0
+        var flash5hDates: [Date] = []
+        var flashWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
         let calendar = Calendar.current
         let isoFormatter = ISO8601DateFormatter()
@@ -34,35 +40,37 @@ public struct RealUsageProvider {
         if let subdirs = try? fileManager.contentsOfDirectory(at: geminiDir, includingPropertiesForKeys: nil) {
             for appDir in subdirs {
                 let brainDir = appDir.appendingPathComponent("brain")
-                guard let convos = try? fileManager.contentsOfDirectory(at: brainDir, includingPropertiesForKeys: nil) else { continue }
+                guard fileManager.fileExists(atPath: brainDir.path) else { continue }
                 
-                for convo in convos {
-                    let logFile = convo.appendingPathComponent(".system_generated/logs/transcript.jsonl")
-                    guard fileManager.fileExists(atPath: logFile.path) else { continue }
+                guard let convDirs = try? fileManager.contentsOfDirectory(at: brainDir, includingPropertiesForKeys: nil) else { continue }
+                
+                for convDir in convDirs {
+                    let transcriptPath = convDir
+                        .appendingPathComponent(".system_generated")
+                        .appendingPathComponent("logs")
+                        .appendingPathComponent("transcript.jsonl")
                     
-                    // Check file modification date to skip old logs
-                    if let attrs = try? fileManager.attributesOfItem(atPath: logFile.path),
-                       let modDate = attrs[.modificationDate] as? Date,
-                       modDate < sevenDaysAgo {
-                        continue
-                    }
-                    
-                    guard let fileHandle = try? FileHandle(forReadingFrom: logFile) else { continue }
+                    guard fileManager.fileExists(atPath: transcriptPath.path) else { continue }
+                    guard let fileHandle = try? FileHandle(forReadingFrom: transcriptPath) else { continue }
                     defer { try? fileHandle.close() }
                     
                     let data = fileHandle.readDataToEndOfFile()
                     guard let text = String(data: data, encoding: .utf8) else { continue }
                     
-                    var isGeminiSession = true
+                    // Track model tier: "argon", "flash", or "other" (e.g. claude)
+                    var currentTier: String = "flash"
                     
                     for line in text.split(separator: "\n") {
-                        // Detect active model changes (e.g. Gemini 3.8 Flash, Gemini 4 Argon, Claude Opus, etc.)
                         if line.contains("USER_SETTINGS_CHANGE") || line.contains("Model Selection") {
-                            let lowerLine = line.lowercased()
-                            if lowerLine.contains("claude") {
-                                isGeminiSession = false
-                            } else if lowerLine.contains("gemini") {
-                                isGeminiSession = true
+                            let lower = line.lowercased()
+                            if lower.contains("claude") {
+                                currentTier = "other"
+                            } else if lower.contains("argon") {
+                                currentTier = "argon"
+                            } else if lower.contains("flash") {
+                                currentTier = "flash"
+                            } else if lower.contains("pro") {
+                                currentTier = "argon" // 3.1 Pro -> mapped to reasoning/Argon tier
                             }
                         }
                         
@@ -80,24 +88,29 @@ public struct RealUsageProvider {
                             let rawWeekday = calendar.component(.weekday, from: date)
                             let monIndex = (rawWeekday + 5) % 7
                             
-                            // Antigravity tracks all IDE and CLI agent requests
                             if date >= sevenDaysAgo {
-                                agyWeeklyCount += 1
-                                agyWeekdayCounts[monIndex, default: 0] += 1
+                                agyWkCount += 1
+                                agyWkDays[monIndex, default: 0] += 1
                                 
-                                if isGeminiSession {
-                                    geminiWeeklyCount += 1
-                                    geminiWeekdayCounts[monIndex, default: 0] += 1
+                                if currentTier == "argon" {
+                                    argonWkCount += 1
+                                    argonWkDays[monIndex, default: 0] += 1
+                                } else if currentTier == "flash" {
+                                    flashWkCount += 1
+                                    flashWkDays[monIndex, default: 0] += 1
                                 }
                             }
                             
                             if date >= fiveHoursAgo {
-                                agyFiveHourCount += 1
-                                agyTimestampsIn5h.append(date)
+                                agy5hCount += 1
+                                agy5hDates.append(date)
                                 
-                                if isGeminiSession {
-                                    geminiFiveHourCount += 1
-                                    geminiTimestampsIn5h.append(date)
+                                if currentTier == "argon" {
+                                    argon5hCount += 1
+                                    argon5hDates.append(date)
+                                } else if currentTier == "flash" {
+                                    flash5hCount += 1
+                                    flash5hDates.append(date)
                                 }
                             }
                         }
@@ -106,71 +119,62 @@ public struct RealUsageProvider {
             }
         }
         
-        // Compute next reset slot countdowns
-        agyTimestampsIn5h.sort()
-        var agyNextSlotReset: TimeInterval = 0
-        if let oldest = agyTimestampsIn5h.first {
+        func computeSlotReset(for dates: inout [Date]) -> TimeInterval {
+            dates.sort()
+            guard let oldest = dates.first else { return 0 }
             let target = oldest.addingTimeInterval(5 * 3600)
-            agyNextSlotReset = max(0, target.timeIntervalSince(now))
+            return max(0, target.timeIntervalSince(now))
         }
         
-        geminiTimestampsIn5h.sort()
-        var geminiNextSlotReset: TimeInterval = 0
-        if let oldest = geminiTimestampsIn5h.first {
-            let target = oldest.addingTimeInterval(5 * 3600)
-            geminiNextSlotReset = max(0, target.timeIntervalSince(now))
-        }
+        let agyNextReset = computeSlotReset(for: &agy5hDates)
+        let argonNextReset = computeSlotReset(for: &argon5hDates)
+        let flashNextReset = computeSlotReset(for: &flash5hDates)
         
         let dayNames = ["M", "T", "W", "T", "F", "S", "S"]
-        let agyMaxDaily = max(100.0, (agyWeekdayCounts.values.max() ?? 100.0) * 1.1)
-        var agyDays: [DailyUsage] = []
-        for i in 0..<7 {
-            agyDays.append(DailyUsage(
-                dayName: dayNames[i],
-                count: agyWeekdayCounts[i] ?? 0,
-                maxCap: agyMaxDaily
-            ))
+        func makeDailyUsage(counts: [Int: Double]) -> [DailyUsage] {
+            let maxVal = max(100.0, (counts.values.max() ?? 100.0) * 1.1)
+            return (0..<7).map { i in
+                DailyUsage(dayName: dayNames[i], count: counts[i] ?? 0, maxCap: maxVal)
+            }
         }
         
-        let geminiMaxDaily = max(100.0, (geminiWeekdayCounts.values.max() ?? 100.0) * 1.1)
-        var geminiDays: [DailyUsage] = []
-        for i in 0..<7 {
-            geminiDays.append(DailyUsage(
-                dayName: dayNames[i],
-                count: geminiWeekdayCounts[i] ?? 0,
-                maxCap: geminiMaxDaily
-            ))
-        }
-        
-        // Dynamic, responsive quota scaling
-        let agyFiveHourCap: Double = max(1000.0, agyFiveHourCount * 1.1)
-        let agyWeeklyCap: Double = max(3000.0, agyWeeklyCount * 1.1)
-        
-        let geminiFiveHourCap: Double = max(1000.0, geminiFiveHourCount * 1.1)
-        let geminiWeeklyCap: Double = max(3000.0, geminiWeeklyCount * 1.1)
-        
-        let agySnapshot = UsageSnapshot(
+        let agySnap = UsageSnapshot(
             source: .antigravity,
-            fiveHourUsed: agyFiveHourCount,
-            fiveHourLimit: agyFiveHourCap,
-            nextSlotResetSeconds: agyNextSlotReset,
-            fullResetSeconds: max(0, 5 * 3600 - agyNextSlotReset),
-            weeklyUsed: agyWeeklyCount,
-            weeklyLimit: agyWeeklyCap,
-            weeklyDays: agyDays
+            fiveHourUsed: agy5hCount,
+            fiveHourLimit: max(1000.0, agy5hCount * 1.1),
+            nextSlotResetSeconds: agyNextReset,
+            fullResetSeconds: max(0, 5 * 3600 - agyNextReset),
+            weeklyUsed: agyWkCount,
+            weeklyLimit: max(3000.0, agyWkCount * 1.1),
+            weeklyDays: makeDailyUsage(counts: agyWkDays)
         )
         
-        let geminiSnapshot = UsageSnapshot(
-            source: .geminiApi,
-            fiveHourUsed: geminiFiveHourCount,
-            fiveHourLimit: geminiFiveHourCap,
-            nextSlotResetSeconds: geminiNextSlotReset,
-            fullResetSeconds: max(0, 5 * 3600 - geminiNextSlotReset),
-            weeklyUsed: geminiWeeklyCount,
-            weeklyLimit: geminiWeeklyCap,
-            weeklyDays: geminiDays
+        let argonSnap = UsageSnapshot(
+            source: .geminiArgon,
+            fiveHourUsed: argon5hCount,
+            fiveHourLimit: max(1000.0, argon5hCount * 1.1),
+            nextSlotResetSeconds: argonNextReset,
+            fullResetSeconds: max(0, 5 * 3600 - argonNextReset),
+            weeklyUsed: argonWkCount,
+            weeklyLimit: max(3000.0, argonWkCount * 1.1),
+            weeklyDays: makeDailyUsage(counts: argonWkDays)
         )
         
-        return RealUsageResult(antigravity: agySnapshot, gemini: geminiSnapshot)
+        let flashSnap = UsageSnapshot(
+            source: .geminiFlash,
+            fiveHourUsed: flash5hCount,
+            fiveHourLimit: max(1000.0, flash5hCount * 1.1),
+            nextSlotResetSeconds: flashNextReset,
+            fullResetSeconds: max(0, 5 * 3600 - flashNextReset),
+            weeklyUsed: flashWkCount,
+            weeklyLimit: max(3000.0, flashWkCount * 1.1),
+            weeklyDays: makeDailyUsage(counts: flashWkDays)
+        )
+        
+        return RealUsageResult(
+            antigravity: agySnap,
+            geminiArgon: argonSnap,
+            geminiFlash: flashSnap
+        )
     }
 }
