@@ -25,7 +25,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     }
     
     private func setupPopover() {
-        popover.contentSize = NSSize(width: 380, height: 490)
+        popover.contentSize = NSSize(width: 380, height: 530)
         popover.behavior = .transient
         popover.animates = true
         
@@ -37,7 +37,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         contextMenu.delegate = self
         
         // App title / header
-        let titleItem = NSMenuItem(title: "AI Usage Monitor", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: "AI Usage Monitor (v\(UpdateChecker.currentVersion))", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         contextMenu.addItem(titleItem)
         
@@ -47,6 +47,11 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         let refreshItem = NSMenuItem(title: "Refresh Usage Data", action: #selector(refreshClicked), keyEquivalent: "r")
         refreshItem.target = self
         contextMenu.addItem(refreshItem)
+        
+        // Check for Updates
+        let updateItem = NSMenuItem(title: "Check for Updates...", action: #selector(checkUpdatesClicked), keyEquivalent: "u")
+        updateItem.target = self
+        contextMenu.addItem(updateItem)
         
         // About
         let aboutItem = NSMenuItem(title: "About AI Usage Bar...", action: #selector(aboutClicked), keyEquivalent: "")
@@ -130,10 +135,16 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         store.refresh()
     }
     
+    @objc private func checkUpdatesClicked() {
+        Task {
+            await UpdateChecker.shared.checkForUpdates(manual: true)
+        }
+    }
+    
     @objc private func aboutClicked() {
         let alert = NSAlert()
         alert.messageText = "AI Usage Monitor"
-        alert.informativeText = "Version 1.0.4\n\nA native macOS menu bar status monitor tracking daily and weekly usage quotas for Claude Opus, Gemini Argon, Gemini Flash, and Antigravity IDE.\n\nDeveloped by Murad Jabir."
+        alert.informativeText = "Version \(UpdateChecker.currentVersion)\n\nA native macOS menu bar status monitor tracking daily and weekly usage quotas for Claude Opus, Gemini Argon, Gemini Flash, and Antigravity IDE.\n\nDeveloped by Murad Jabir."
         alert.alertStyle = .informational
         if let iconPath = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
            let icon = NSImage(contentsOfFile: iconPath) {

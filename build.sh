@@ -69,3 +69,4 @@ if [[ "$*" == *"--launch"* ]] || [[ "$*" == *"-l"* ]] || [ "$RUN_AFTER_BUILD" = 
 else
     echo "✅ Build complete! Installed to /Applications/$APP_NAME"
 fi
+

@@ -2,6 +2,7 @@ import SwiftUI
 
 public struct PopoverContentView: View {
     @ObservedObject var store: UsageStore
+    @ObservedObject var updater = UpdateChecker.shared
     
     public init(store: UsageStore) {
         self.store = store
@@ -11,6 +12,11 @@ public struct PopoverContentView: View {
         VStack(spacing: 11) {
             // Header
             headerView
+            
+            // Upgrade Banner if a new release is detected
+            if let update = updater.availableUpdate {
+                updateBanner(update: update)
+            }
             
             Divider()
                 .opacity(0.3)
@@ -64,13 +70,62 @@ public struct PopoverContentView: View {
         .background(.ultraThinMaterial)
     }
     
+    // MARK: - Update Notification Banner
+    private func updateBanner(update: ReleaseInfo) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
+                .foregroundColor(.cyan)
+                .font(.system(size: 15))
+            
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Update Available: \(update.version)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.primary)
+                Text(updater.updateStatusMessage ?? "Click to upgrade seamlessly")
+                    .font(.system(size: 9.5))
+                    .foregroundColor(.secondary)
+            }
+            
+            Spacer()
+            
+            if updater.isUpdating {
+                ProgressView()
+                    .controlSize(.small)
+            } else {
+                Button(action: {
+                    Task {
+                        await updater.performInAppUpdate(release: update)
+                    }
+                }) {
+                    Text("Update Now")
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3.5)
+                        .background(Color.accentColor)
+                        .foregroundColor(.white)
+                        .cornerRadius(6)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color.accentColor.opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
     // MARK: - Header
     private var headerView: some View {
         HStack {
             HStack(spacing: 6) {
                 Text("AI Usage Monitor")
                     .font(.system(size: 13, weight: .bold))
-                Text("v1.0.4")
+                Text("v\(UpdateChecker.currentVersion)")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 4)

@@ -20,3 +20,4 @@ run: install
 clean:
 	swift package clean
 	rm -rf .build
+
