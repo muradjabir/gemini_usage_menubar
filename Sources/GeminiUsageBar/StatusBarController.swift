@@ -25,7 +25,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     }
     
     private func setupPopover() {
-        popover.contentSize = NSSize(width: 380, height: 420)
+        popover.contentSize = NSSize(width: 380, height: 490)
         popover.behavior = .transient
         popover.animates = true
         
@@ -37,7 +37,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         contextMenu.delegate = self
         
         // App title / header
-        let titleItem = NSMenuItem(title: "Gemini & Antigravity Usage Bar", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: "AI Usage Monitor", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         contextMenu.addItem(titleItem)
         
@@ -49,7 +49,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         contextMenu.addItem(refreshItem)
         
         // About
-        let aboutItem = NSMenuItem(title: "About Gemini Usage Bar...", action: #selector(aboutClicked), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "About AI Usage Bar...", action: #selector(aboutClicked), keyEquivalent: "")
         aboutItem.target = self
         contextMenu.addItem(aboutItem)
         
@@ -70,24 +70,35 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     }
     
     private func bindStore() {
-        Publishers.CombineLatest3(store.$antigravitySnapshot, store.$geminiArgonSnapshot, store.$geminiFlashSnapshot)
-            .receive(on: RunLoop.main)
-            .sink { [weak self] _, _, _ in
-                self?.updateStatusBarItem()
-            }
-            .store(in: &cancellables)
+        Publishers.CombineLatest4(
+            store.$antigravitySnapshot,
+            store.$geminiArgonSnapshot,
+            store.$claudeOpusSnapshot,
+            store.$geminiFlashSnapshot
+        )
+        .receive(on: RunLoop.main)
+        .sink { [weak self] _, _, _, _ in
+            self?.updateStatusBarItem()
+        }
+        .store(in: &cancellables)
     }
     
     private func updateStatusBarItem() {
         guard let button = statusItem.button else { return }
         
-        let agyPercent = store.antigravitySnapshot.fiveHourPercent
-        // For menu bar icon, track the active higher-demand tier (Argon) or max
-        let gemPercent = max(store.geminiArgonSnapshot.fiveHourPercent, store.geminiFlashSnapshot.fiveHourPercent)
+        // Left Gauge: Antigravity Agent platform exhaustion
+        let agyPercent = store.antigravitySnapshot.maxExhaustionPercent
+        
+        // Right Gauge: Highest exhausted model between Claude, Argon, and Flash
+        let modelPercent = max(
+            store.claudeOpusSnapshot.maxExhaustionPercent,
+            store.geminiArgonSnapshot.maxExhaustionPercent,
+            store.geminiFlashSnapshot.maxExhaustionPercent
+        )
         
         let gaugeImage = MenuBarGaugeRenderer.renderGaugeIcon(
             agyPercent: agyPercent,
-            geminiPercent: gemPercent
+            geminiPercent: modelPercent
         )
         
         button.image = gaugeImage
@@ -99,17 +110,13 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         guard let event = NSApp.currentEvent, let button = statusItem.button else { return }
         
         if event.type == .rightMouseUp {
-            // Close popover if open
             if popover.isShown {
                 popover.performClose(sender)
             }
-            // Show right click context menu
             statusItem.menu = contextMenu
             button.performClick(nil)
-            // Reset to nil so left click continues opening the popover
             statusItem.menu = nil
         } else {
-            // Left click toggles popover
             if popover.isShown {
                 popover.performClose(sender)
             } else {
@@ -125,8 +132,8 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     
     @objc private func aboutClicked() {
         let alert = NSAlert()
-        alert.messageText = "Gemini & Antigravity Usage Bar"
-        alert.informativeText = "Version 1.0.3\n\nA native macOS menu bar status monitor tracking 5-hour rolling request windows and weekly quotas for Antigravity, Gemini Argon, and Gemini Flash.\n\nDeveloped by Murad Jabir."
+        alert.messageText = "AI Usage Monitor"
+        alert.informativeText = "Version 1.0.4\n\nA native macOS menu bar status monitor tracking daily and weekly usage quotas for Claude Opus, Gemini Argon, Gemini Flash, and Antigravity IDE.\n\nDeveloped by Murad Jabir."
         alert.alertStyle = .informational
         if let iconPath = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
            let icon = NSImage(contentsOfFile: iconPath) {

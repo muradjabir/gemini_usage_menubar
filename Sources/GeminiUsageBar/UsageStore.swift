@@ -6,22 +6,13 @@ import ServiceManagement
 public final class UsageStore: ObservableObject {
     @Published public var antigravitySnapshot: UsageSnapshot = .mockAntigravity
     @Published public var geminiArgonSnapshot: UsageSnapshot = .mockGeminiArgon
+    @Published public var claudeOpusSnapshot: UsageSnapshot = .mockClaudeOpus
     @Published public var geminiFlashSnapshot: UsageSnapshot = .mockGeminiFlash
-    
-    // Fallback combined snapshot for menu bar icons or general usage
-    public var combinedGeminiSnapshot: UsageSnapshot {
-        geminiArgonSnapshot
-    }
-    
-    @Published public var agyMetric: UsageWindowMetric = .fiveHour
-    @Published public var argonMetric: UsageWindowMetric = .fiveHour
-    @Published public var flashMetric: UsageWindowMetric = .fiveHour
     
     @Published public var isRefreshing: Bool = false
     @Published public var lastUpdated: Date = Date()
     @Published public var launchAtLogin: Bool = false
     
-    private var secondTimer: AnyCancellable?
     private var pollTimer: AnyCancellable?
     
     public init() {
@@ -68,6 +59,7 @@ public final class UsageStore: ObservableObject {
             await MainActor.run {
                 self.antigravitySnapshot = result.antigravity
                 self.geminiArgonSnapshot = result.geminiArgon
+                self.claudeOpusSnapshot = result.claudeOpus
                 self.geminiFlashSnapshot = result.geminiFlash
                 self.lastUpdated = Date()
             }
@@ -75,26 +67,6 @@ public final class UsageStore: ObservableObject {
     }
     
     private func startLiveTimers() {
-        // Decrement reset seconds each second
-        secondTimer = Timer.publish(every: 1.0, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                
-                func decrementSnap(_ snap: inout UsageSnapshot) {
-                    if snap.nextSlotResetSeconds > 0 {
-                        snap.nextSlotResetSeconds = max(0, snap.nextSlotResetSeconds - 1)
-                    }
-                    if snap.fullResetSeconds > 0 {
-                        snap.fullResetSeconds = max(0, snap.fullResetSeconds - 1)
-                    }
-                }
-                
-                decrementSnap(&self.antigravitySnapshot)
-                decrementSnap(&self.geminiArgonSnapshot)
-                decrementSnap(&self.geminiFlashSnapshot)
-            }
-        
         // Auto-refresh from transcript files every 30 seconds
         pollTimer = Timer.publish(every: 30.0, on: .main, in: .common)
             .autoconnect()

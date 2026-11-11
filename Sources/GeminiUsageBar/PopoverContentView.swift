@@ -8,31 +8,29 @@ public struct PopoverContentView: View {
     }
     
     public var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 11) {
             // Header
             headerView
             
             Divider()
                 .opacity(0.3)
             
-            // Progress Bar Cards for Antigravity, Gemini Argon, and Gemini Flash
-            VStack(spacing: 9) {
-                // Antigravity (Agent / IDE)
+            // Progress Bar Cards: Antigravity, Claude Opus, Gemini Argon, and Gemini Flash
+            VStack(spacing: 8) {
+                // Claude Opus (Premium Reasoning)
                 ModelProgressBarCardView(
-                    title: "Antigravity",
-                    subtitle: "Agent",
-                    snapshot: store.antigravitySnapshot,
-                    accentGradient: LinearGradient(colors: [Color.cyan, Color.purple], startPoint: .leading, endPoint: .trailing),
-                    selectedMetric: $store.agyMetric
+                    title: "Claude Opus",
+                    subtitle: "Anthropic",
+                    snapshot: store.claudeOpusSnapshot,
+                    accentGradient: LinearGradient(colors: [Color(red: 0.85, green: 0.45, blue: 0.3), Color(red: 0.75, green: 0.25, blue: 0.35)], startPoint: .leading, endPoint: .trailing)
                 )
                 
-                // Gemini 4 Argon (Reasoning Tier)
+                // Gemini 4 Argon (Pro Reasoning Tier)
                 ModelProgressBarCardView(
                     title: "Gemini Argon",
-                    subtitle: "Pro Tier",
+                    subtitle: "Google Pro",
                     snapshot: store.geminiArgonSnapshot,
-                    accentGradient: LinearGradient(colors: [Color.blue, Color.purple], startPoint: .leading, endPoint: .trailing),
-                    selectedMetric: $store.argonMetric
+                    accentGradient: LinearGradient(colors: [Color.blue, Color.purple], startPoint: .leading, endPoint: .trailing)
                 )
                 
                 // Gemini 3.8 Flash (Speed Tier)
@@ -40,8 +38,15 @@ public struct PopoverContentView: View {
                     title: "Gemini Flash",
                     subtitle: "Fast Tier",
                     snapshot: store.geminiFlashSnapshot,
-                    accentGradient: LinearGradient(colors: [Color(red: 0.1, green: 0.7, blue: 0.9), Color.blue], startPoint: .leading, endPoint: .trailing),
-                    selectedMetric: $store.flashMetric
+                    accentGradient: LinearGradient(colors: [Color(red: 0.1, green: 0.7, blue: 0.9), Color.blue], startPoint: .leading, endPoint: .trailing)
+                )
+                
+                // Antigravity (Total Agent / IDE Platform Usage)
+                ModelProgressBarCardView(
+                    title: "Antigravity",
+                    subtitle: "All Agents",
+                    snapshot: store.antigravitySnapshot,
+                    accentGradient: LinearGradient(colors: [Color.cyan, Color.purple], startPoint: .leading, endPoint: .trailing)
                 )
             }
             
@@ -54,7 +59,7 @@ public struct PopoverContentView: View {
             // Footer with clean Launch at Login toggle
             footerView
         }
-        .padding(14)
+        .padding(13)
         .frame(width: 380)
         .background(.ultraThinMaterial)
     }
@@ -65,7 +70,7 @@ public struct PopoverContentView: View {
             HStack(spacing: 6) {
                 Text("AI Usage Monitor")
                     .font(.system(size: 13, weight: .bold))
-                Text("v1.0.3")
+                Text("v1.0.4")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 4)
@@ -96,8 +101,8 @@ public struct PopoverContentView: View {
                 Spacer()
                 HStack(spacing: 8) {
                     HStack(spacing: 3) {
-                        Circle().fill(Color.purple).frame(width: 5, height: 5)
-                        Text("AGY").font(.system(size: 8)).foregroundColor(.secondary)
+                        Circle().fill(Color(red: 0.85, green: 0.45, blue: 0.3)).frame(width: 5, height: 5)
+                        Text("Claude").font(.system(size: 8)).foregroundColor(.secondary)
                     }
                     HStack(spacing: 3) {
                         Circle().fill(Color.blue).frame(width: 5, height: 5)
@@ -112,29 +117,29 @@ public struct PopoverContentView: View {
             
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(0..<store.antigravitySnapshot.weeklyDays.count, id: \.self) { idx in
-                    let agyDay = store.antigravitySnapshot.weeklyDays[idx]
+                    let claudeDay = store.claudeOpusSnapshot.weeklyDays[idx]
                     let argonDay = store.geminiArgonSnapshot.weeklyDays[idx]
                     let flashDay = store.geminiFlashSnapshot.weeklyDays[idx]
                     
                     VStack(spacing: 3) {
                         HStack(alignment: .bottom, spacing: 1.5) {
-                            // AGY Bar
+                            // Claude Bar
                             RoundedRectangle(cornerRadius: 1)
-                                .fill(LinearGradient(colors: [.purple, .indigo], startPoint: .top, endPoint: .bottom))
-                                .frame(width: 5, height: max(2, CGFloat(agyDay.fraction * 22)))
+                                .fill(Color(red: 0.85, green: 0.45, blue: 0.3))
+                                .frame(width: 4.5, height: max(2, CGFloat(claudeDay.fraction * 22)))
                             
                             // Argon Bar
                             RoundedRectangle(cornerRadius: 1)
                                 .fill(LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom))
-                                .frame(width: 5, height: max(2, CGFloat(argonDay.fraction * 22)))
+                                .frame(width: 4.5, height: max(2, CGFloat(argonDay.fraction * 22)))
                             
                             // Flash Bar
                             RoundedRectangle(cornerRadius: 1)
                                 .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .top, endPoint: .bottom))
-                                .frame(width: 5, height: max(2, CGFloat(flashDay.fraction * 22)))
+                                .frame(width: 4.5, height: max(2, CGFloat(flashDay.fraction * 22)))
                         }
                         
-                        Text(agyDay.dayName)
+                        Text(claudeDay.dayName)
                             .font(.system(size: 9, weight: .medium))
                             .foregroundColor(.secondary)
                     }
@@ -144,7 +149,7 @@ public struct PopoverContentView: View {
             .frame(height: 34)
             .padding(.top, 2)
         }
-        .padding(10)
+        .padding(9)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color(nsColor: .controlBackgroundColor).opacity(0.45))
@@ -170,7 +175,7 @@ public struct PopoverContentView: View {
             
             Spacer()
             
-            Text("Right-click menu bar icon for options")
+            Text("Right-click icon for options")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary.opacity(0.7))
         }

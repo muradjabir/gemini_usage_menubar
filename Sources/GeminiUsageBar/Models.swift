@@ -3,6 +3,7 @@ import Foundation
 public enum UsageSource: String, CaseIterable, Identifiable {
     case antigravity = "Antigravity IDE"
     case geminiArgon = "Gemini Argon"
+    case claudeOpus = "Claude Opus"
     case geminiFlash = "Gemini Flash"
 
     public var id: String { rawValue }
@@ -11,6 +12,7 @@ public enum UsageSource: String, CaseIterable, Identifiable {
         switch self {
         case .antigravity: return "sparkles"
         case .geminiArgon: return "bolt.shield.fill"
+        case .claudeOpus: return "brain.head.profile"
         case .geminiFlash: return "bolt.fill"
         }
     }
@@ -30,18 +32,16 @@ public struct DailyUsage: Identifiable {
 
 public struct UsageSnapshot {
     public var source: UsageSource
-    public var fiveHourUsed: Double
-    public var fiveHourLimit: Double
-    public var nextSlotResetSeconds: TimeInterval
-    public var fullResetSeconds: TimeInterval
+    public var dailyUsed: Double
+    public var dailyLimit: Double
     
     public var weeklyUsed: Double
     public var weeklyLimit: Double
     public var weeklyDays: [DailyUsage]
     
-    public var fiveHourPercent: Double {
-        guard fiveHourLimit > 0 else { return 0 }
-        return (fiveHourUsed / fiveHourLimit) * 100
+    public var dailyPercent: Double {
+        guard dailyLimit > 0 else { return 0 }
+        return (dailyUsed / dailyLimit) * 100
     }
     
     public var weeklyPercent: Double {
@@ -49,15 +49,19 @@ public struct UsageSnapshot {
         return (weeklyUsed / weeklyLimit) * 100
     }
     
+    // Primary gauge percentage for menu bar or quick status:
+    // Takes the higher exhaustion level between daily and weekly
+    public var maxExhaustionPercent: Double {
+        max(dailyPercent, weeklyPercent)
+    }
+    
     public static var mockAntigravity: UsageSnapshot {
         UsageSnapshot(
             source: .antigravity,
-            fiveHourUsed: 68,
-            fiveHourLimit: 100,
-            nextSlotResetSeconds: 42 * 60 + 15,
-            fullResetSeconds: 2 * 3600 + 15 * 60,
-            weeklyUsed: 331,
-            weeklyLimit: 500,
+            dailyUsed: 12,
+            dailyLimit: 50,
+            weeklyUsed: 115,
+            weeklyLimit: 250,
             weeklyDays: []
         )
     }
@@ -65,12 +69,21 @@ public struct UsageSnapshot {
     public static var mockGeminiArgon: UsageSnapshot {
         UsageSnapshot(
             source: .geminiArgon,
-            fiveHourUsed: 45,
-            fiveHourLimit: 100,
-            nextSlotResetSeconds: 30 * 60,
-            fullResetSeconds: 2 * 3600,
-            weeklyUsed: 210,
-            weeklyLimit: 500,
+            dailyUsed: 15,
+            dailyLimit: 20,
+            weeklyUsed: 22,
+            weeklyLimit: 25,
+            weeklyDays: []
+        )
+    }
+    
+    public static var mockClaudeOpus: UsageSnapshot {
+        UsageSnapshot(
+            source: .claudeOpus,
+            dailyUsed: 18,
+            dailyLimit: 20,
+            weeklyUsed: 22,
+            weeklyLimit: 25,
             weeklyDays: []
         )
     }
@@ -78,12 +91,10 @@ public struct UsageSnapshot {
     public static var mockGeminiFlash: UsageSnapshot {
         UsageSnapshot(
             source: .geminiFlash,
-            fiveHourUsed: 30,
-            fiveHourLimit: 250,
-            nextSlotResetSeconds: 15 * 60,
-            fullResetSeconds: 1 * 3600,
-            weeklyUsed: 150,
-            weeklyLimit: 1000,
+            dailyUsed: 4,
+            dailyLimit: 100,
+            weeklyUsed: 70,
+            weeklyLimit: 500,
             weeklyDays: []
         )
     }

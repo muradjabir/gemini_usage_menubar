@@ -3,44 +3,52 @@ import Foundation
 public struct RealUsageResult {
     public let antigravity: UsageSnapshot
     public let geminiArgon: UsageSnapshot
+    public let claudeOpus: UsageSnapshot
     public let geminiFlash: UsageSnapshot
 }
 
 public struct RealUsageProvider {
-    // Fixed standard baseline quotas (so bars are stable and accurately reflect remaining allowance)
-    public static let agy5hLimit: Double = 100.0     // Total prompts / interactions across all agents in 5h
+    // Realistic plan quota baselines for Antigravity tiers:
+    // Argon & Claude share low premium limits (~20 daily / ~25 weekly)
+    // Flash has high throughput (~100 daily / ~500 weekly)
+    // Total Antigravity (~100 daily / ~500 weekly)
+    public static let argonDailyLimit: Double = 20.0
+    public static let argonWeeklyLimit: Double = 25.0
+    
+    public static let claudeDailyLimit: Double = 20.0
+    public static let claudeWeeklyLimit: Double = 25.0
+    
+    public static let flashDailyLimit: Double = 100.0
+    public static let flashWeeklyLimit: Double = 500.0
+    
+    public static let agyDailyLimit: Double = 100.0
     public static let agyWeeklyLimit: Double = 500.0
-    
-    public static let argon5hLimit: Double = 50.0     // Argon reasoning tier limit in 5h
-    public static let argonWeeklyLimit: Double = 250.0
-    
-    public static let flash5hLimit: Double = 150.0    // Flash high-speed tier limit in 5h
-    public static let flashWeeklyLimit: Double = 750.0
 
     public static func fetchUsage() -> RealUsageResult {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let geminiDir = home.appendingPathComponent(".gemini")
         
         let now = Date()
-        let fiveHoursAgo = now.addingTimeInterval(-5 * 3600)
+        let calendar = Calendar.current
+        let todayStart = calendar.startOfDay(for: now)
         let sevenDaysAgo = now.addingTimeInterval(-7 * 86400)
         
-        var agy5hCount: Double = 0
+        var agyDailyCount: Double = 0
         var agyWkCount: Double = 0
-        var agy5hDates: [Date] = []
         var agyWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
-        var argon5hCount: Double = 0
+        var argonDailyCount: Double = 0
         var argonWkCount: Double = 0
-        var argon5hDates: [Date] = []
         var argonWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
-        var flash5hCount: Double = 0
+        var claudeDailyCount: Double = 0
+        var claudeWkCount: Double = 0
+        var claudeWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
+        
+        var flashDailyCount: Double = 0
         var flashWkCount: Double = 0
-        var flash5hDates: [Date] = []
         var flashWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
-        let calendar = Calendar.current
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let fallbackIsoFormatter = ISO8601DateFormatter()
@@ -54,7 +62,7 @@ public struct RealUsageProvider {
                 guard let convDirs = try? fileManager.contentsOfDirectory(at: brainDir, includingPropertiesForKeys: nil) else { continue }
                 
                 for convDir in convDirs {
-                    // Only read transcript.jsonl (avoid counting transcript_full.jsonl duplicate)
+                    // Only read transcript.jsonl to avoid duplicates from transcript_full.jsonl
                     let transcriptPath = convDir
                         .appendingPathComponent(".system_generated")
                         .appendingPathComponent("logs")
@@ -73,7 +81,7 @@ public struct RealUsageProvider {
                         if line.contains("USER_SETTINGS_CHANGE") || line.contains("Model Selection") {
                             let lower = line.lowercased()
                             if lower.contains("claude") {
-                                currentTier = "other"
+                                currentTier = "claude"
                             } else if lower.contains("argon") {
                                 currentTier = "argon"
                             } else if lower.contains("flash") {
@@ -83,7 +91,7 @@ public struct RealUsageProvider {
                             }
                         }
                         
-                        // Count user prompts (USER_INPUT) - the true rate limit driver in Antigravity
+                        // Count user prompts (USER_INPUT)
                         if line.contains("\"type\":\"USER_INPUT\"") {
                             guard let lineData = line.data(using: .utf8),
                                   let json = try? JSONSerialization.jsonObject(with: lineData) as? [String: Any],
@@ -96,6 +104,7 @@ public struct RealUsageProvider {
                             }
                             
                             let rawWeekday = calendar.component(.weekday, from: date)
+                            // Convert Sunday=1, Monday=2 -> Monday=0 .. Sunday=6
                             let monIndex = (rawWeekday + 5) % 7
                             
                             if date >= sevenDaysAgo {
@@ -105,22 +114,24 @@ public struct RealUsageProvider {
                                 if currentTier == "argon" {
                                     argonWkCount += 1
                                     argonWkDays[monIndex, default: 0] += 1
+                                } else if currentTier == "claude" {
+                                    claudeWkCount += 1
+                                    claudeWkDays[monIndex, default: 0] += 1
                                 } else if currentTier == "flash" {
                                     flashWkCount += 1
                                     flashWkDays[monIndex, default: 0] += 1
                                 }
                             }
                             
-                            if date >= fiveHoursAgo {
-                                agy5hCount += 1
-                                agy5hDates.append(date)
+                            if date >= todayStart {
+                                agyDailyCount += 1
                                 
                                 if currentTier == "argon" {
-                                    argon5hCount += 1
-                                    argon5hDates.append(date)
+                                    argonDailyCount += 1
+                                } else if currentTier == "claude" {
+                                    claudeDailyCount += 1
                                 } else if currentTier == "flash" {
-                                    flash5hCount += 1
-                                    flash5hDates.append(date)
+                                    flashDailyCount += 1
                                 }
                             }
                         }
@@ -128,17 +139,6 @@ public struct RealUsageProvider {
                 }
             }
         }
-        
-        func computeSlotReset(for dates: inout [Date]) -> TimeInterval {
-            dates.sort()
-            guard let oldest = dates.first else { return 0 }
-            let target = oldest.addingTimeInterval(5 * 3600)
-            return max(0, target.timeIntervalSince(now))
-        }
-        
-        let agyNextReset = computeSlotReset(for: &agy5hDates)
-        let argonNextReset = computeSlotReset(for: &argon5hDates)
-        let flashNextReset = computeSlotReset(for: &flash5hDates)
         
         let dayNames = ["M", "T", "W", "T", "F", "S", "S"]
         func makeDailyUsage(counts: [Int: Double], dailyCap: Double) -> [DailyUsage] {
@@ -149,10 +149,8 @@ public struct RealUsageProvider {
         
         let agySnap = UsageSnapshot(
             source: .antigravity,
-            fiveHourUsed: agy5hCount,
-            fiveHourLimit: agy5hLimit,
-            nextSlotResetSeconds: agyNextReset,
-            fullResetSeconds: max(0, 5 * 3600 - agyNextReset),
+            dailyUsed: agyDailyCount,
+            dailyLimit: agyDailyLimit,
             weeklyUsed: agyWkCount,
             weeklyLimit: agyWeeklyLimit,
             weeklyDays: makeDailyUsage(counts: agyWkDays, dailyCap: max(20.0, (agyWkDays.values.max() ?? 20.0) * 1.2))
@@ -160,29 +158,35 @@ public struct RealUsageProvider {
         
         let argonSnap = UsageSnapshot(
             source: .geminiArgon,
-            fiveHourUsed: argon5hCount,
-            fiveHourLimit: argon5hLimit,
-            nextSlotResetSeconds: argonNextReset,
-            fullResetSeconds: max(0, 5 * 3600 - argonNextReset),
+            dailyUsed: argonDailyCount,
+            dailyLimit: argonDailyLimit,
             weeklyUsed: argonWkCount,
             weeklyLimit: argonWeeklyLimit,
-            weeklyDays: makeDailyUsage(counts: argonWkDays, dailyCap: max(15.0, (argonWkDays.values.max() ?? 15.0) * 1.2))
+            weeklyDays: makeDailyUsage(counts: argonWkDays, dailyCap: max(10.0, (argonWkDays.values.max() ?? 10.0) * 1.2))
+        )
+        
+        let claudeSnap = UsageSnapshot(
+            source: .claudeOpus,
+            dailyUsed: claudeDailyCount,
+            dailyLimit: claudeDailyLimit,
+            weeklyUsed: claudeWkCount,
+            weeklyLimit: claudeWeeklyLimit,
+            weeklyDays: makeDailyUsage(counts: claudeWkDays, dailyCap: max(10.0, (claudeWkDays.values.max() ?? 10.0) * 1.2))
         )
         
         let flashSnap = UsageSnapshot(
             source: .geminiFlash,
-            fiveHourUsed: flash5hCount,
-            fiveHourLimit: flash5hLimit,
-            nextSlotResetSeconds: flashNextReset,
-            fullResetSeconds: max(0, 5 * 3600 - flashNextReset),
+            dailyUsed: flashDailyCount,
+            dailyLimit: flashDailyLimit,
             weeklyUsed: flashWkCount,
             weeklyLimit: flashWeeklyLimit,
-            weeklyDays: makeDailyUsage(counts: flashWkDays, dailyCap: max(25.0, (flashWkDays.values.max() ?? 25.0) * 1.2))
+            weeklyDays: makeDailyUsage(counts: flashWkDays, dailyCap: max(20.0, (flashWkDays.values.max() ?? 20.0) * 1.2))
         )
         
         return RealUsageResult(
             antigravity: agySnap,
             geminiArgon: argonSnap,
+            claudeOpus: claudeSnap,
             geminiFlash: flashSnap
         )
     }
