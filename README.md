@@ -87,15 +87,11 @@ Popover HUD:
    cd gemini_usage_menubar
    ```
 
-2. **Build the binary:**
+2. **Build, install to `/Applications`, and run:**
    ```bash
-   swift build -c release
+   ./build.sh --launch
    ```
-
-3. **Run in background:**
-   ```bash
-   ./.build/release/GeminiUsageBar &
-   ```
+   *(or `make run`)*
 
 ---
 
