@@ -38,9 +38,9 @@ cat << 'EOF' > "$CONTENTS_DIR/Info.plist"
     <key>CFBundleIdentifier</key>
     <string>com.muradjabir.GeminiUsageBar</string>
     <key>CFBundleVersion</key>
-    <string>1.0.4</string>
+    <string>1.0.5</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.4</string>
+    <string>1.0.5</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>

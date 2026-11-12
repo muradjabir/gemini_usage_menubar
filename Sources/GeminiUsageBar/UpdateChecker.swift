@@ -12,7 +12,7 @@ public struct ReleaseInfo {
 public final class UpdateChecker: ObservableObject {
     public static let shared = UpdateChecker()
     
-    public static let currentVersion = "1.0.4"
+    public static let currentVersion = "1.0.5"
     private static let repo = "muradjabir/gemini_usage_menubar"
     
     @Published public var availableUpdate: ReleaseInfo? = nil
