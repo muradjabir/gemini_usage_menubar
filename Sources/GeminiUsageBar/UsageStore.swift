@@ -5,9 +5,10 @@ import ServiceManagement
 @MainActor
 public final class UsageStore: ObservableObject {
     @Published public var antigravitySnapshot: UsageSnapshot = .mockAntigravity
+    @Published public var geminiHydrogenSnapshot: UsageSnapshot = .mockGeminiHydrogen
     @Published public var geminiArgonSnapshot: UsageSnapshot = .mockGeminiArgon
-    @Published public var claudeOpusSnapshot: UsageSnapshot = .mockClaudeOpus
     @Published public var geminiFlashSnapshot: UsageSnapshot = .mockGeminiFlash
+    @Published public var claudeOpusSnapshot: UsageSnapshot = .mockClaudeOpus
     
     @Published public var isRefreshing: Bool = false
     @Published public var lastUpdated: Date = Date()
@@ -58,9 +59,10 @@ public final class UsageStore: ObservableObject {
             let result = RealUsageProvider.fetchUsage()
             await MainActor.run {
                 self.antigravitySnapshot = result.antigravity
+                self.geminiHydrogenSnapshot = result.geminiHydrogen
                 self.geminiArgonSnapshot = result.geminiArgon
-                self.claudeOpusSnapshot = result.claudeOpus
                 self.geminiFlashSnapshot = result.geminiFlash
+                self.claudeOpusSnapshot = result.claudeOpus
                 self.lastUpdated = Date()
             }
         }

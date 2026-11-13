@@ -2,18 +2,20 @@ import Foundation
 
 public enum UsageSource: String, CaseIterable, Identifiable {
     case antigravity = "Antigravity IDE"
+    case geminiHydrogen = "Gemini Hydrogen"
     case geminiArgon = "Gemini Argon"
-    case claudeOpus = "Claude Opus"
     case geminiFlash = "Gemini Flash"
+    case claudeOpus = "Claude Opus"
 
     public var id: String { rawValue }
     
     public var iconName: String {
         switch self {
         case .antigravity: return "sparkles"
+        case .geminiHydrogen: return "atom"
         case .geminiArgon: return "bolt.shield.fill"
-        case .claudeOpus: return "brain.head.profile"
         case .geminiFlash: return "bolt.fill"
+        case .claudeOpus: return "brain.head.profile"
         }
     }
 }
@@ -62,6 +64,17 @@ public struct UsageSnapshot {
             dailyLimit: 50,
             weeklyUsed: 115,
             weeklyLimit: 250,
+            weeklyDays: []
+        )
+    }
+    
+    public static var mockGeminiHydrogen: UsageSnapshot {
+        UsageSnapshot(
+            source: .geminiHydrogen,
+            dailyUsed: 12,
+            dailyLimit: 25,
+            weeklyUsed: 12,
+            weeklyLimit: 30,
             weeklyDays: []
         )
     }

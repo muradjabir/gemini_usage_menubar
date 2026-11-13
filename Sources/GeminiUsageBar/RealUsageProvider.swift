@@ -2,24 +2,30 @@ import Foundation
 
 public struct RealUsageResult {
     public let antigravity: UsageSnapshot
+    public let geminiHydrogen: UsageSnapshot
     public let geminiArgon: UsageSnapshot
-    public let claudeOpus: UsageSnapshot
     public let geminiFlash: UsageSnapshot
+    public let claudeOpus: UsageSnapshot
 }
 
 public struct RealUsageProvider {
     // Realistic plan quota baselines for Antigravity tiers:
-    // Argon & Claude share low premium limits (~20 daily / ~25 weekly)
-    // Flash has high throughput (~100 daily / ~500 weekly)
-    // Total Antigravity (~100 daily / ~500 weekly)
+    // Hydrogen (New flagship medium reasoning): ~25 daily / ~30 weekly
+    // Argon (Pro reasoning): ~20 daily / ~25 weekly
+    // Flash (High-throughput speed tier): ~100 daily / ~500 weekly
+    // Claude Opus (Anthropic reasoning): ~20 daily / ~25 weekly
+    // Total Antigravity agent capacity: ~100 daily / ~500 weekly
+    public static let hydrogenDailyLimit: Double = 25.0
+    public static let hydrogenWeeklyLimit: Double = 30.0
+    
     public static let argonDailyLimit: Double = 20.0
     public static let argonWeeklyLimit: Double = 25.0
     
-    public static let claudeDailyLimit: Double = 20.0
-    public static let claudeWeeklyLimit: Double = 25.0
-    
     public static let flashDailyLimit: Double = 100.0
     public static let flashWeeklyLimit: Double = 500.0
+    
+    public static let claudeDailyLimit: Double = 20.0
+    public static let claudeWeeklyLimit: Double = 25.0
     
     public static let agyDailyLimit: Double = 100.0
     public static let agyWeeklyLimit: Double = 500.0
@@ -37,17 +43,21 @@ public struct RealUsageProvider {
         var agyWkCount: Double = 0
         var agyWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
+        var hydrogenDailyCount: Double = 0
+        var hydrogenWkCount: Double = 0
+        var hydrogenWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
+        
         var argonDailyCount: Double = 0
         var argonWkCount: Double = 0
         var argonWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
-        var claudeDailyCount: Double = 0
-        var claudeWkCount: Double = 0
-        var claudeWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
-        
         var flashDailyCount: Double = 0
         var flashWkCount: Double = 0
         var flashWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
+        
+        var claudeDailyCount: Double = 0
+        var claudeWkCount: Double = 0
+        var claudeWkDays: [Int: Double] = [0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0]
         
         let isoFormatter = ISO8601DateFormatter()
         isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -80,10 +90,12 @@ public struct RealUsageProvider {
                     for line in text.split(separator: "\n") {
                         if line.contains("USER_SETTINGS_CHANGE") || line.contains("Model Selection") {
                             let lower = line.lowercased()
-                            if lower.contains("claude") {
-                                currentTier = "claude"
+                            if lower.contains("hydrogen") {
+                                currentTier = "hydrogen"
                             } else if lower.contains("argon") {
                                 currentTier = "argon"
+                            } else if lower.contains("claude") {
+                                currentTier = "claude"
                             } else if lower.contains("flash") {
                                 currentTier = "flash"
                             } else if lower.contains("pro") {
@@ -111,13 +123,20 @@ public struct RealUsageProvider {
                                 agyWkCount += 1
                                 agyWkDays[monIndex, default: 0] += 1
                                 
-                                if currentTier == "argon" {
+                                switch currentTier {
+                                case "hydrogen":
+                                    hydrogenWkCount += 1
+                                    hydrogenWkDays[monIndex, default: 0] += 1
+                                case "argon":
                                     argonWkCount += 1
                                     argonWkDays[monIndex, default: 0] += 1
-                                } else if currentTier == "claude" {
+                                case "claude":
                                     claudeWkCount += 1
                                     claudeWkDays[monIndex, default: 0] += 1
-                                } else if currentTier == "flash" {
+                                case "flash":
+                                    flashWkCount += 1
+                                    flashWkDays[monIndex, default: 0] += 1
+                                default:
                                     flashWkCount += 1
                                     flashWkDays[monIndex, default: 0] += 1
                                 }
@@ -126,11 +145,16 @@ public struct RealUsageProvider {
                             if date >= todayStart {
                                 agyDailyCount += 1
                                 
-                                if currentTier == "argon" {
+                                switch currentTier {
+                                case "hydrogen":
+                                    hydrogenDailyCount += 1
+                                case "argon":
                                     argonDailyCount += 1
-                                } else if currentTier == "claude" {
+                                case "claude":
                                     claudeDailyCount += 1
-                                } else if currentTier == "flash" {
+                                case "flash":
+                                    flashDailyCount += 1
+                                default:
                                     flashDailyCount += 1
                                 }
                             }
@@ -156,6 +180,15 @@ public struct RealUsageProvider {
             weeklyDays: makeDailyUsage(counts: agyWkDays, dailyCap: max(20.0, (agyWkDays.values.max() ?? 20.0) * 1.2))
         )
         
+        let hydrogenSnap = UsageSnapshot(
+            source: .geminiHydrogen,
+            dailyUsed: hydrogenDailyCount,
+            dailyLimit: hydrogenDailyLimit,
+            weeklyUsed: hydrogenWkCount,
+            weeklyLimit: hydrogenWeeklyLimit,
+            weeklyDays: makeDailyUsage(counts: hydrogenWkDays, dailyCap: max(10.0, (hydrogenWkDays.values.max() ?? 10.0) * 1.2))
+        )
+        
         let argonSnap = UsageSnapshot(
             source: .geminiArgon,
             dailyUsed: argonDailyCount,
@@ -163,15 +196,6 @@ public struct RealUsageProvider {
             weeklyUsed: argonWkCount,
             weeklyLimit: argonWeeklyLimit,
             weeklyDays: makeDailyUsage(counts: argonWkDays, dailyCap: max(10.0, (argonWkDays.values.max() ?? 10.0) * 1.2))
-        )
-        
-        let claudeSnap = UsageSnapshot(
-            source: .claudeOpus,
-            dailyUsed: claudeDailyCount,
-            dailyLimit: claudeDailyLimit,
-            weeklyUsed: claudeWkCount,
-            weeklyLimit: claudeWeeklyLimit,
-            weeklyDays: makeDailyUsage(counts: claudeWkDays, dailyCap: max(10.0, (claudeWkDays.values.max() ?? 10.0) * 1.2))
         )
         
         let flashSnap = UsageSnapshot(
@@ -183,11 +207,21 @@ public struct RealUsageProvider {
             weeklyDays: makeDailyUsage(counts: flashWkDays, dailyCap: max(20.0, (flashWkDays.values.max() ?? 20.0) * 1.2))
         )
         
+        let claudeSnap = UsageSnapshot(
+            source: .claudeOpus,
+            dailyUsed: claudeDailyCount,
+            dailyLimit: claudeDailyLimit,
+            weeklyUsed: claudeWkCount,
+            weeklyLimit: claudeWeeklyLimit,
+            weeklyDays: makeDailyUsage(counts: claudeWkDays, dailyCap: max(10.0, (claudeWkDays.values.max() ?? 10.0) * 1.2))
+        )
+        
         return RealUsageResult(
             antigravity: agySnap,
+            geminiHydrogen: hydrogenSnap,
             geminiArgon: argonSnap,
-            claudeOpus: claudeSnap,
-            geminiFlash: flashSnap
+            geminiFlash: flashSnap,
+            claudeOpus: claudeSnap
         )
     }
 }

@@ -75,14 +75,19 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     }
     
     private func bindStore() {
-        Publishers.CombineLatest4(
-            store.$antigravitySnapshot,
-            store.$geminiArgonSnapshot,
-            store.$claudeOpusSnapshot,
-            store.$geminiFlashSnapshot
+        Publishers.CombineLatest(
+            Publishers.CombineLatest3(
+                store.$antigravitySnapshot,
+                store.$geminiHydrogenSnapshot,
+                store.$geminiArgonSnapshot
+            ),
+            Publishers.CombineLatest(
+                store.$geminiFlashSnapshot,
+                store.$claudeOpusSnapshot
+            )
         )
         .receive(on: RunLoop.main)
-        .sink { [weak self] _, _, _, _ in
+        .sink { [weak self] _ in
             self?.updateStatusBarItem()
         }
         .store(in: &cancellables)
@@ -94,11 +99,12 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
         // Left Gauge: Antigravity Agent platform exhaustion
         let agyPercent = store.antigravitySnapshot.maxExhaustionPercent
         
-        // Right Gauge: Highest exhausted model between Claude, Argon, and Flash
+        // Right Gauge: Highest exhausted model across active model tiers
         let modelPercent = max(
-            store.claudeOpusSnapshot.maxExhaustionPercent,
+            store.geminiHydrogenSnapshot.maxExhaustionPercent,
             store.geminiArgonSnapshot.maxExhaustionPercent,
-            store.geminiFlashSnapshot.maxExhaustionPercent
+            store.geminiFlashSnapshot.maxExhaustionPercent,
+            store.claudeOpusSnapshot.maxExhaustionPercent
         )
         
         let gaugeImage = MenuBarGaugeRenderer.renderGaugeIcon(
@@ -144,7 +150,7 @@ public final class StatusBarController: NSObject, NSMenuDelegate {
     @objc private func aboutClicked() {
         let alert = NSAlert()
         alert.messageText = "AI Usage Monitor"
-        alert.informativeText = "Version \(UpdateChecker.currentVersion)\n\nA native macOS menu bar status monitor tracking daily and weekly usage quotas for Claude Opus, Gemini Argon, Gemini Flash, and Antigravity IDE.\n\nDeveloped by Murad Jabir."
+        alert.informativeText = "Version \(UpdateChecker.currentVersion)\n\nA native macOS menu bar status monitor tracking daily and weekly usage quotas for Gemini Hydrogen, Gemini Argon, Gemini Flash, Claude Opus, and Antigravity IDE.\n\nDeveloped by Murad Jabir."
         alert.alertStyle = .informational
         if let iconPath = Bundle.main.path(forResource: "AppIcon", ofType: "icns"),
            let icon = NSImage(contentsOfFile: iconPath) {

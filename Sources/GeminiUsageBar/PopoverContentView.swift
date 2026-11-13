@@ -21,14 +21,14 @@ public struct PopoverContentView: View {
             Divider()
                 .opacity(0.3)
             
-            // Progress Bar Cards: Antigravity, Claude Opus, Gemini Argon, and Gemini Flash
+            // Progress Bar Cards: Gemini Hydrogen, Gemini Argon, Gemini Flash, Claude Opus, and Antigravity
             VStack(spacing: 8) {
-                // Claude Opus (Premium Reasoning)
+                // Gemini 4 Hydrogen (New Flagship Thinking / Reasoning)
                 ModelProgressBarCardView(
-                    title: "Claude Opus",
-                    subtitle: "Anthropic",
-                    snapshot: store.claudeOpusSnapshot,
-                    accentGradient: LinearGradient(colors: [Color(red: 0.85, green: 0.45, blue: 0.3), Color(red: 0.75, green: 0.25, blue: 0.35)], startPoint: .leading, endPoint: .trailing)
+                    title: "Gemini Hydrogen",
+                    subtitle: "Google Flagship",
+                    snapshot: store.geminiHydrogenSnapshot,
+                    accentGradient: LinearGradient(colors: [Color(red: 0.1, green: 0.85, blue: 0.7), Color(red: 0.2, green: 0.5, blue: 1.0)], startPoint: .leading, endPoint: .trailing)
                 )
                 
                 // Gemini 4 Argon (Pro Reasoning Tier)
@@ -46,6 +46,16 @@ public struct PopoverContentView: View {
                     snapshot: store.geminiFlashSnapshot,
                     accentGradient: LinearGradient(colors: [Color(red: 0.1, green: 0.7, blue: 0.9), Color.blue], startPoint: .leading, endPoint: .trailing)
                 )
+                
+                // Claude Opus (Anthropic Reasoning - shown if usage exists or as legacy fallback)
+                if store.claudeOpusSnapshot.weeklyUsed > 0 || store.claudeOpusSnapshot.dailyUsed > 0 {
+                    ModelProgressBarCardView(
+                        title: "Claude Opus",
+                        subtitle: "Anthropic",
+                        snapshot: store.claudeOpusSnapshot,
+                        accentGradient: LinearGradient(colors: [Color(red: 0.85, green: 0.45, blue: 0.3), Color(red: 0.75, green: 0.25, blue: 0.35)], startPoint: .leading, endPoint: .trailing)
+                    )
+                }
                 
                 // Antigravity (Total Agent / IDE Platform Usage)
                 ModelProgressBarCardView(
@@ -156,8 +166,8 @@ public struct PopoverContentView: View {
                 Spacer()
                 HStack(spacing: 8) {
                     HStack(spacing: 3) {
-                        Circle().fill(Color(red: 0.85, green: 0.45, blue: 0.3)).frame(width: 5, height: 5)
-                        Text("Claude").font(.system(size: 8)).foregroundColor(.secondary)
+                        Circle().fill(Color(red: 0.1, green: 0.85, blue: 0.7)).frame(width: 5, height: 5)
+                        Text("Hydrogen").font(.system(size: 8)).foregroundColor(.secondary)
                     }
                     HStack(spacing: 3) {
                         Circle().fill(Color.blue).frame(width: 5, height: 5)
@@ -167,34 +177,48 @@ public struct PopoverContentView: View {
                         Circle().fill(Color.cyan).frame(width: 5, height: 5)
                         Text("Flash").font(.system(size: 8)).foregroundColor(.secondary)
                     }
+                    if store.claudeOpusSnapshot.weeklyUsed > 0 {
+                        HStack(spacing: 3) {
+                            Circle().fill(Color(red: 0.85, green: 0.45, blue: 0.3)).frame(width: 5, height: 5)
+                            Text("Claude").font(.system(size: 8)).foregroundColor(.secondary)
+                        }
+                    }
                 }
             }
             
             HStack(alignment: .bottom, spacing: 8) {
                 ForEach(0..<store.antigravitySnapshot.weeklyDays.count, id: \.self) { idx in
-                    let claudeDay = store.claudeOpusSnapshot.weeklyDays[idx]
+                    let hydrogenDay = store.geminiHydrogenSnapshot.weeklyDays[idx]
                     let argonDay = store.geminiArgonSnapshot.weeklyDays[idx]
                     let flashDay = store.geminiFlashSnapshot.weeklyDays[idx]
+                    let claudeDay = store.claudeOpusSnapshot.weeklyDays[idx]
                     
                     VStack(spacing: 3) {
                         HStack(alignment: .bottom, spacing: 1.5) {
-                            // Claude Bar
+                            // Hydrogen Bar
                             RoundedRectangle(cornerRadius: 1)
-                                .fill(Color(red: 0.85, green: 0.45, blue: 0.3))
-                                .frame(width: 4.5, height: max(2, CGFloat(claudeDay.fraction * 22)))
+                                .fill(LinearGradient(colors: [Color(red: 0.1, green: 0.85, blue: 0.7), Color.teal], startPoint: .top, endPoint: .bottom))
+                                .frame(width: 4, height: max(2, CGFloat(hydrogenDay.fraction * 22)))
                             
                             // Argon Bar
                             RoundedRectangle(cornerRadius: 1)
                                 .fill(LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom))
-                                .frame(width: 4.5, height: max(2, CGFloat(argonDay.fraction * 22)))
+                                .frame(width: 4, height: max(2, CGFloat(argonDay.fraction * 22)))
                             
                             // Flash Bar
                             RoundedRectangle(cornerRadius: 1)
                                 .fill(LinearGradient(colors: [.cyan, .blue], startPoint: .top, endPoint: .bottom))
-                                .frame(width: 4.5, height: max(2, CGFloat(flashDay.fraction * 22)))
+                                .frame(width: 4, height: max(2, CGFloat(flashDay.fraction * 22)))
+                            
+                            // Claude Bar (if present)
+                            if store.claudeOpusSnapshot.weeklyUsed > 0 {
+                                RoundedRectangle(cornerRadius: 1)
+                                    .fill(Color(red: 0.85, green: 0.45, blue: 0.3))
+                                    .frame(width: 4, height: max(2, CGFloat(claudeDay.fraction * 22)))
+                            }
                         }
                         
-                        Text(claudeDay.dayName)
+                        Text(hydrogenDay.dayName)
                             .font(.system(size: 9, weight: .medium))
                             .foregroundColor(.secondary)
                     }
